@@ -13,9 +13,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        primarySwatch: Colors.teal
       ),
-      home: const InfiniteScrollingListView(),
+      home: const RandomWords(),
     );
   }
 }
@@ -29,48 +29,86 @@ class RandomWords extends StatefulWidget {
 
 class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
+  final _saved = <WordPair>{};
   final _biggerFont = const TextStyle(fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Startup Name Generator'),
+        actions: <Widget>[
+          IconButton(onPressed: _pushSaved, icon: const Icon(Icons.list))
+        ],
+      ),
+      body: _buildSuggestions(),
+    );
+  }
+
+  void _pushSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) {
+          final Iterable<ListTile> tiles = _saved.map(
+            (WordPair pair) {
+              return ListTile(
+                title: Text(
+                  pair.asPascalCase,
+                  style: _biggerFont,
+                ),
+              );
+            },
+          );
+
+          final List<Widget> divided = ListTile.divideTiles(
+            context: context,
+            tiles: tiles,
+          ).toList();
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Saved Suggestions'),
+            ),
+            body: ListView(children: divided),
+          );
+        },
+      ),
+    );
+  }
+
+  ListView _buildSuggestions() {
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
-      itemBuilder: /*1*/ (context, i) {
+      itemBuilder: (context, i) {
         if (i.isOdd) return const Divider();
-        /*2*/
-
-        final index = i ~/ 2; /*3*/
+        final index = i ~/ 2;
         if (index >= _suggestions.length) {
-          _suggestions.addAll(generateWordPairs().take(10)); /*4*/
+          _suggestions.addAll(generateWordPairs().take(10));
         }
-        return ListTile(
-          title: Text(
-            _suggestions[index].asPascalCase,
-            style: _biggerFont,
-          ),
-        );
+        return _buildRow(_suggestions[index]);
       },
     );
   }
-}
 
-class InfiniteScrollingListView extends StatelessWidget {
-  const InfiniteScrollingListView({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Startup Name Generator',
-      theme: ThemeData(primarySwatch: Colors.deepOrange),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Startup Name Generator'),
+  ListTile _buildRow(WordPair pair) {
+    final bool alreadySaved = _saved.contains(pair);
+    return ListTile(
+        title: Text(
+          pair.asPascalCase,
+          style: _biggerFont,
         ),
-        body: const Center(
-            child: Center(
-          child: RandomWords(),
-        )),
-      ),
-    );
+        trailing: Icon(
+          alreadySaved ? Icons.favorite : Icons.favorite_border,
+          color: alreadySaved ? Colors.red : null,
+        ),
+        onTap: () {
+          setState(() {
+            if (alreadySaved) {
+              _saved.remove(pair);
+            } else {
+              _saved.add(pair);
+            }
+          });
+        });
   }
 }
